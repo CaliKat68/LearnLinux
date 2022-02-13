@@ -1,0 +1,17 @@
+For Debian based distros
+$ sudo apt update
+$ sudo apt install build-essential zlib1g-dev \
+libncurses5-dev libgdbm-dev libnss3-dev \
+libssl-dev libreadline-dev libffi-dev curl
+
+$ cd Python-3.*
+./configure
+
+If you're using apt or dnf for installing packages, use the package manager to remove Python and then install
+
+$ sudo make install
+
+If you'd like to install multiple instances of Python
+$ sudo make altinstall
+
+python3 --version
