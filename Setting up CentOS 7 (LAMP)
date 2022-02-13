@@ -1,5 +1,21 @@
 Setting up a CentOS 7 Server
 
+After you have installed your server, you will go through the CentOS configuration process.
+During this process you will be able to do the following:
+  - Create users
+  - Set a root password
+  - Select the packages for your linux server
+  - Setup networking
+  - Create drive partitions
+  - and more..
+
+Create User
+  - during this set it is vitally important to NEVER set the user as an administrator. This is a major security risk!!
+  - always require passwords for users to log into your server. Not adding this requirement creates a major security risk!!
+  - write down your password and store it in a safe place. Forgetting your password makes your life miserable!!
+  
+
+
 Update the server:
 yum check-update (Any applications which need to be updated)
 yum upgrade      (We don't need to keep obsolete packages; upgrade over update at this stage)
