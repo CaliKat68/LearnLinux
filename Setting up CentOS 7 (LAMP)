@@ -1,0 +1,126 @@
+Setting up a CentOS 7 Server
+
+Update the server:
+yum check-update (Any applications which need to be updated)
+yum upgrade      (We don't need to keep obsolete packages; upgrade over update at this stage)
+yum clean all    (Let's clean up any downloaded packages we don't need)
+
+Basic Tools for Server Management:
+yum install nano wget curl net-tools lsof
+
+nano: This editor is better than Vi (fight me, nerd!)
+wget: Get something from a web server
+curl: Allows for data xfer using different protocols
+net-tools: This helps management network environment
+lsof: List open files (Does that file need to be open?)
+
+Networking: Take a ride on the internetz and interwebz
+
+There are two ways in which you can setup networking - GUI or CLI (command line interface)
+
+GUI - This is a great way for beginners to setup a new server
+
+nmtui-hostname: What do you want to call your host (server) mytestserver.nerdsrule.com (this is the FQDN (fully qualified domain name) for your server)
+nmtui-edit: This will allow you to choose the network interface you want to setup -
+              - the profile name of your nic card,
+              - the device name,
+              - the IP/Gateway/DNS Server
+              - custom routes
+nmtui-connect: Make sure that you actually enable the nic card
+
+
+Time to test if your now able to see the interwebz
+
+ifconfig <device name> or just ipconfig (NOTE: this is the OLD way)
+ip addr show  (NOTE: This is the NEW way, use this, you'll impress people)
+
+ip a (NOTE: this command is similar to the previous commands)
+ping -c2 google.com (This will send a small packet of data to a server and then tell you how long it took to get there and back)
+
+OLD WAY:
+netstat -r : This will give you the routing table for your server
+netstat -a : Hey what ports have you left open, are you sure those should be open?   (NOTE: This will return a lot of ports, you the ''| more' to only show 1 page at a time netstat -a | more )
+netstat -tulpn : What PID/Program names are on these open ports? VERY USEFUL command
+
+NEW WAY:
+
+ip route
+ss : What ports do you have open
+Ip
+
+
+The FUN STUFF
+
+Managing Service on your CentOS Server
+
+systemctl list-units : Let's find out what services are there and their current state (active / inactive)
+systemctl list-unit-files -t service : Has a service been set to automatically start at boot up?
+
+Remove unwanted services
+systemctl stop <service name>
+systemctl disable <service name>
+yum remove <service name>
+
+PS, TOP, or PSTree can be used to view services on your server
+ps -aux | more : this is a common way to run this command
+top : this will give us some additional data on server health and services running
+pstree -p : (NOTE: this is not installed out of the box yum install psmisc)
+
+
+FIREWALL!! YOU SHALL NOT PASS!!
+
+Firewalling has a lot of complexity and as such configuring the firewall is outside of the scope of basic setup
+ystemctl enable firewalld
+systemctl start firewalld
+systemctl status firewalld
+
+SUDO Permissions on User Accounts
+
+adduser michelle            : let's add a new user
+passwd michelle             : give that new user a password
+usermod -aG wheel michelle  : add the user to the SUDO group
+
+NOW the GOOD STUFF!!
+
+Let's setup our server as a LAMP box (Linux Apache2 MySQL PHP)
+NOTE: You can use the free version of NGINX over Apache2.
+sudo yum install httpd              : get the web server
+sudo systemctl start httpd.service  : start the web server
+
+http://your_server_IP_address/      : check to see if it's up and running
+sudo systemctl enable httpd.service : Make Apache2 start at boot
+
+If you're unsure about your public IP address
+ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'  : Your friends will be impressed at your piping skills - get the ipv4 and ipv6 address for the device eth0, print the ipv4 on a line and then ipv6 on the next line
+curl http://icanhazip.com   : use that fancy curl command and have icanhazip return your world ip address
+
+Let's get the database installed
+
+If you use YUM to install the database you'll actually get MariaDB. To install MySQL it's a little different.
+
+wget https://dev.mysql.com/get/mysql57-community-release-el7-9.noarch.rpm   : Download the file
+md5sum mysql57-community-release-el7-9.noarch.rpm                           : Checksum to make sure you got the correct file
+
+sudo rpm -ivh mysql57-community-release-el7-9.noarch.rpm    : extract your file and add the yum repositories
+sudo yum install mysql-server
+
+sudo systemctl start mysqld   : Turn on your sweet new MySQL server
+sudo systemctl status mysqld  : Make sure that your server started up
+sudo systemctl disable mysqld : MySQL is setup to auto start at bootup, but you can change that if you like.
+
+sudo grep 'temporary password' /var/log/mysqld.log  : During the installation process, a temporary password is generated for the MySQL root user. This will show you.
+sudo mysql_secure_installation : MySQL comes with a security script which will assist you in setting up a new password for root.
+
+mysqladmin -u root -p version  : Verify everything you've done so far for your new SQL server
+
+Install some PHP cuz webz are cool!
+
+sudo yum install php php-mysql
+yum search php-  : More PHP packages that you may want/need
+
+
+
+Make sure your FIREWALL allows traffic to pass through to your web server
+sudo firewall-cmd --permanent --zone=public --add-service=http
+sudo firewall-cmd --permanent --zone=public --add-service=https
+sudo firewall-cmd --reload
