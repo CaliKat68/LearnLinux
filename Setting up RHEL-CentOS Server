@@ -1,0 +1,186 @@
+CONFIGURING A RHEL or CentOS SERVER
+
+POST INSTALL SETUP
+Update the server:
+yum check-update (Any applications which need to be updated)
+yum upgrade      (We don't need to keep obsolete packages; upgrade over update at this stage)
+yum clean all    (Let's clean up any downloaded packages we don't need)
+
+Basic Tools for Server Management:
+yum install nano wget curl net-tools lsof
+
+nano: Alternative to Vi, beginner friendly
+wget: Get something from a web server
+curl: Allows for data xfer using different protocols
+net-tools: This helps management network environment
+lsof: List open files
+
+
+
+CONFIGURE SSH
+sudo yum –y install openssh-server openssh-clients
+
+Enble and add to system startup
+systemctl start sshd
+systemctl enable sshd
+
+IT IS CRITICAL THAT YOU CONFIGURE YOUR OPENSSH SERVER TO PREVENT ROOT LOGINS
+nano /etc/ssh/sshd_config
+CRITICAL STEP DO NOT SKIP THIS
+"PermitRootLogin Yes" to "PermitRootLogin No"
+Change the port to a non-standard "Port" "Port 7321" (note: you can choose whatever port works best for your configuration)
+
+
+
+CONFIGURE NETWORKING
+There are two ways in which you can setup networking - GUI or CLI (command line interface)
+GUI - This is a great way for beginners to setup a new server
+
+nmtui-hostname: What do you want to call your host (server) mytestserver.nerdsrule.com (this is the FQDN (fully qualified domain name) for your server)
+nmtui-edit: This will allow you to choose the network interface you want to setup -
+              - the profile name of your nic card,
+              - the device name,
+              - the IP/Gateway/DNS Server
+              - custom routes
+nmtui-connect: Make sure that you actually enable the nic
+Time to test if your now able to see the interwebz
+
+ifconfig <device name> or just ipconfig (NOTE: this is the OLD way)
+ip addr show  (NOTE: This is the NEW way, use this, you'll impress people)
+
+ip a (NOTE: this command is similar to the previous commands)
+ping -c2 google.com (This will send a small packet of data to a server and then tell you how long it took to get there and back)
+
+OLD WAY:
+netstat -r : This will give you the routing table for your server
+netstat -a : Hey what ports have you left open, are you sure those should be open?   (NOTE: This will return a lot of ports, you the ''| more' to only show 1 page at a time netstat -a | more )
+netstat -tulpn : What PID/Program names are on these open ports? VERY USEFUL command
+
+NEW WAY:
+ip route
+ss : What ports do you have open
+Ip
+
+
+
+SERVER SERVICE MANAGEMENT
+systemctl list-units : Let's find out what services are there and their current state (active / inactive)
+systemctl list-unit-files -t service : Has a service been set to automatically start at boot up?
+
+Remove unwanted services
+systemctl stop <service name>
+systemctl disable <service name>
+yum remove <service name>
+
+PS, TOP, or PSTree can be used to view services on your server
+ps -aux | more : this is a common way to run this command
+top : this will give us some additional data on server health and services running
+pstree -p : (NOTE: this is not installed out of the box yum install psmisc)
+
+
+
+CONFIGURE A FIREWALL
+Firewalling has a lot of complexity, configuring the firewall is outside of the scope of basic setup
+ystemctl enable firewalld
+systemctl start firewalld
+systemctl status firewalld
+
+
+
+SUDO Permissions on User Accounts
+adduser michelle            : let's add a new user
+passwd michelle             : give that new user a password
+usermod -aG wheel michelle  : add the user to the SUDO group
+
+
+
+CONFIGURE A WEB SERVER
+NOTE: You can use the free version of NGINX over Apache2.
+
+Installing Apache2 on your linux server
+sudo yum install httpd              : get the web server
+sudo systemctl start httpd.service  : start the web server
+sudo systemctl enable httpd.service : Make Apache2 start at boot
+
+Installing NGINX on your linux server
+sudo yum install yum-utils
+To set up the yum repository, create the file named /etc/yum.repos.d/nginx.repo with the following contents:
+
+[nginx-stable]
+name=nginx stable repo
+baseurl=http://nginx.org/packages/centos/$releasever/$basearch/
+gpgcheck=1
+enabled=1
+gpgkey=https://nginx.org/keys/nginx_signing.key
+module_hotfixes=true
+
+[nginx-mainline]
+name=nginx mainline repo
+baseurl=http://nginx.org/packages/mainline/centos/$releasever/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=https://nginx.org/keys/nginx_signing.key
+module_hotfixes=true
+By default, the repository for stable nginx packages is used. If you would like to use mainline nginx packages, run the following command:
+
+sudo yum-config-manager --enable nginx-mainline
+To install nginx, run the following command:
+
+sudo yum install nginx
+When prompted to accept the GPG key, verify that the fingerprint matches 573B FD6B 3D8F BC64 1079 A6AB ABF5 BD82 7BD9 BF62, and if so, accept it.
+
+
+http://your_server_IP_address/      : check to see if it's up and running
+
+If you're unsure about your public IP address
+ip addr show eth0 | grep inet | awk '{ print $2; }' | sed 's/\/.*$//'  : Your friends will be impressed at your piping skills - get the ipv4 and ipv6 address for the device eth0, print the ipv4 on a line and then ipv6 on the next line
+curl http://icanhazip.com   : use that fancy curl command and have icanhazip return your world ip address
+
+Make sure your FIREWALL allows traffic to pass through to your web server
+sudo firewall-cmd --permanent --zone=public --add-service=http
+sudo firewall-cmd --permanent --zone=public --add-service=https
+sudo firewall-cmd --reload
+
+
+
+CONFIGURE A DATABASE
+If you use YUM to install the database you'll actually get MariaDB. To install MySQL it's a little different.
+
+wget https://dev.mysql.com/get/mysql57-community-release-el7-9.noarch.rpm   : Download the file
+md5sum mysql57-community-release-el7-9.noarch.rpm                           : Checksum to make sure you got the correct file
+
+sudo rpm -ivh mysql57-community-release-el7-9.noarch.rpm    : extract your file and add the yum repositories
+sudo yum install mysql-server
+
+sudo systemctl start mysqld   : Turn on your sweet new MySQL server
+sudo systemctl status mysqld  : Make sure that your server started up
+sudo systemctl disable mysqld : MySQL is setup to auto start at bootup, but you can change that if you like.
+
+sudo grep 'temporary password' /var/log/mysqld.log  : During the installation process, a temporary password is generated for the MySQL root user. This will show you.
+sudo mysql_secure_installation : MySQL comes with a security script which will assist you in setting up a new password for root.
+
+mysqladmin -u root -p version  : Verify everything you've done so far for your new SQL server
+
+
+
+CONFIGURE PHP
+sudo yum install php php-mysql
+yum search php-  : More PHP packages that you may want/need
+
+
+
+CONFIGURE PYTHON3
+yum update -y
+yum install -y python3
+Verify Python3 has installed
+[root@centos7 ~]# python3
+Python 3.6.8 (default, Aug  7 2019, 17:28:10)
+[GCC 4.8.5 20150623 (Red Hat 4.8.5-39)] on linux
+
+
+
+CONFIGURE RUBY
+NOTE: This installation is for a single version of Ruby and recommended for beginners.
+sudo yum install ruby
+Verify Ruby has installed
+ruby --version
